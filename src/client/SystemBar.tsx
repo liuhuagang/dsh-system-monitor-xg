@@ -34,7 +34,7 @@ function kindLabel(kind: string | undefined, t: T): string {
 }
 
 function fmtGb(mb: number): string {
-  return (mb / 1024).toFixed(0)
+  return (mb / 1024).toFixed(2)
 }
 
 function Segment({ text, title, className }: { text: string; title?: string; className?: string }) {
@@ -111,7 +111,7 @@ export const SystemBar = memo(function SystemBar(props: PropsRuntime<'conversati
                 <Segment
                   className="dsm-fixed-vram"
                   text={`${t('vram')} ${fmtGb(gpu.vramUsedMb)}/${fmtGb(gpu.vramTotalMb)}G`}
-                  title={`VRAM ${(gpu.vramUsedMb / 1024).toFixed(1)}/${(gpu.vramTotalMb / 1024).toFixed(0)} GiB`}
+                  title={`VRAM ${(gpu.vramUsedMb / 1024).toFixed(2)}/${(gpu.vramTotalMb / 1024).toFixed(2)} GiB`}
                 />
                 <Segment className="dsm-fixed-pwr" text={`${gpu.powerDrawW.toFixed(0)}W`} title={`功耗 ${gpu.powerDrawW.toFixed(0)}W${gpu.powerLimitW > 0 ? `/${gpu.powerLimitW.toFixed(0)}W` : ''}`} />
                 <Segment className="dsm-fixed-temp" text={`${gpu.tempC.toFixed(0)}℃`} title={`温度 ${gpu.tempC.toFixed(0)}℃ · SM 时钟 ${gpu.smClockMhz.toFixed(0)}/${gpu.smClockMaxMhz.toFixed(0)} MHz`} />

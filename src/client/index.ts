@@ -71,7 +71,8 @@ const STYLES = `
   min-width: 14em;
 }
 .dsm-fixed-vram {
-  min-width: 7em;
+  /* 22.00/24.00 两位小数，中英文标签最宽约 8.6em */
+  min-width: 8.8em;
 }
 .dsm-fixed-pwr,
 .dsm-fixed-temp {
