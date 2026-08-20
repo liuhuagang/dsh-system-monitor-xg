@@ -15,7 +15,7 @@
  *   - 带宽受限：带宽 ≥ 80%（SM 较低 = 典型 decode 等待；SM 双高 = 逼近极限）
  *   - 算力受限：SM ≥ 80% 且带宽 < 60%（典型 prefill）
  *
- * @module dsh-system-monitor/bottleneck
+ * @module dsh-system-monitor-xg/bottleneck
  */
 
 import type { Bottleneck, GpuMetrics } from './types.ts'

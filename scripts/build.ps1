@@ -1,4 +1,4 @@
-# dsh-system-monitor 构建脚本（Windows / PowerShell）
+# dsh-system-monitor-xg 构建脚本（Windows / PowerShell）
 #
 # 1. 定位 DSH checkout（DSH_CHECKOUT 环境变量或默认 D:\deepseek-harness）
 # 2. junction 类型依赖到 node_modules（host: cordis/tools/webserver/session；

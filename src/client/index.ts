@@ -1,9 +1,9 @@
 /**
- * dsh-system-monitor client entry: installs stylesheet and locale, then
+ * dsh-system-monitor-xg client entry: installs stylesheet and locale, then
  * registers the system bar on `conversation.composer.dock` (id
  * 'system-monitor', order 1 — next to the built-in stats line at order 0).
  *
- * @module dsh-system-monitor/client
+ * @module dsh-system-monitor-xg/client
  */
 
 import { en, NS, zh } from './locales.ts'
@@ -136,7 +136,7 @@ const STYLES = `
 
 function installStyles(): () => void {
   const style = document.createElement('style')
-  style.dataset.plugin = 'dsh-system-monitor'
+  style.dataset.plugin = 'dsh-system-monitor-xg'
   style.textContent = STYLES
   document.head.appendChild(style)
   return () => { style.remove() }
@@ -147,8 +147,8 @@ export const inject = ['slots', 'locale']
 
 /** Register the system bar on the composer dock (next to the stats line). */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(installStyles, 'dsh-system-monitor: styles')
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-system-monitor: locale')
+  ctx.effect(installStyles, 'dsh-system-monitor-xg: styles')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-system-monitor-xg: locale')
   ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
     name: 'conversation.composer.dock',
     id: 'system-monitor',

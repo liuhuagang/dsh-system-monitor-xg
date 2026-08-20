@@ -5,7 +5,10 @@
  * must never take the sampler down (the exporter 兜底 lesson applies to any
  * host-side persistence).
  *
- * @module dsh-system-monitor/ledger
+ * 数据目录与包名解耦（保持 dsh-system-monitor，不随包名 -xg 后缀变化）：
+ * 升级/改名不迁移历史负载数据。
+ *
+ * @module dsh-system-monitor-xg/ledger
  */
 
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -37,7 +40,7 @@ export class Ledger {
     if (this.ready === null) {
       this.ready = mkdir(this.dir, { recursive: true }).catch(error => {
         this.disabled = true
-        console.warn(`[dsh-system-monitor] ledger dir unavailable (${this.dir}): ${String(error)}`)
+        console.warn(`[dsh-system-monitor-xg] ledger dir unavailable (${this.dir}): ${String(error)}`)
       })
     }
     return this.ready
@@ -50,7 +53,7 @@ export class Ledger {
       const file = join(this.dir, `${name}-${dayStamp(Date.now())}.jsonl`)
       await appendFile(file, `${JSON.stringify(row)}\n`, { encoding: 'utf8', flag: 'a' })
     } catch (error) {
-      console.warn(`[dsh-system-monitor] ledger append failed: ${String(error)}`)
+      console.warn(`[dsh-system-monitor-xg] ledger append failed: ${String(error)}`)
     }
   }
 

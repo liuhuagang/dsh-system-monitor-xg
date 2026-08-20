@@ -1,5 +1,5 @@
 /**
- * Sampler: the heart of dsh-system-monitor.
+ * Sampler: the heart of dsh-system-monitor-xg.
  *
  * 1. 定时采样（默认 1s）：CPU（os.cpus 差值）+ 内存（os）+ GPU（nvidia-smi），
  *    组合成 SamplePoint 推入环形缓冲，并打上当前生成阶段的标签。
@@ -13,7 +13,7 @@
  * 采样是异步的（GPU 查询约 50ms）；用 tickId 序号保护乱序，重复 tick 直接
  * 丢弃，保证环形缓冲单调推进。
  *
- * @module dsh-system-monitor/sampler
+ * @module dsh-system-monitor-xg/sampler
  */
 
 import { freemem, totalmem } from 'node:os'

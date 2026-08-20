@@ -1,4 +1,4 @@
-// dsh-system-monitor client bundle 配置。
+// dsh-system-monitor-xg client bundle 配置。
 // 契约（来自 DSH 的 packages/client/tsdown.client.ts clientConfig）：
 //   - format 必须为 'cjs'，产物为 window.__ModuleLoader__.load({ id, factory })
 //     闭包工厂格式，factory 通过注入的 require 从 Loader 模块表解析 external
@@ -38,7 +38,7 @@ export default {
   },
   outputOptions: {
     entryFileNames: 'client.js',
-    banner: 'window.__ModuleLoader__.load({ id: "dsh-system-monitor", factory: (require) => {',
+    banner: 'window.__ModuleLoader__.load({ id: "dsh-system-monitor-xg", factory: (require) => {',
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
   },

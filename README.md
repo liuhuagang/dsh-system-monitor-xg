@@ -1,4 +1,4 @@
-# dsh-system-monitor
+# dsh-system-monitor-xg
 
 DSH（DeepSeek Harness）宿主机负载监控插件：**CPU / 内存 / GPU 算力与显存带宽
 利用率、显存、功耗、温度**实时显示，并自动诊断推理瓶颈——**「GPU 占用高 ≠
@@ -48,7 +48,7 @@ nvidia-smi 有两个**正交**的利用率数字：
 dsh plugin --profile web add <本仓库路径>
 
 # 或 npm 发布后（scope 待定）
-dsh plugin --profile web add @<scope>/dsh-system-monitor
+dsh plugin --profile web add @<scope>/dsh-system-monitor-xg
 ```
 
 然后**重启 DSH Web**（生产模式无热装插件机制）。底栏在会话页面输入框下方
@@ -78,8 +78,8 @@ dsh plugin --profile web add @<scope>/dsh-system-monitor
 
 ```yaml
 - insert:
-    - id: dsh-system-monitor
-      name: 'dsh-system-monitor'
+    - id: dsh-system-monitor-xg
+      name: 'dsh-system-monitor-xg'
       config:
         intervalMs: 1000    # 采样间隔（250–10000ms）
         historySize: 3600   # 内存环形缓冲条数

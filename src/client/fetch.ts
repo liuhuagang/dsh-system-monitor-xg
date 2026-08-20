@@ -6,7 +6,7 @@
  * 池化请求会无限挂起），因此高频轮询必须用同步 XHR + cache-busting。
  * 本地回环响应 <10ms，同步阻塞可忽略。
  *
- * @module dsh-system-monitor/client/fetch
+ * @module dsh-system-monitor-xg/client/fetch
  */
 
 export interface CpuMetrics { percent: number; perCore: number[]; cores: number }

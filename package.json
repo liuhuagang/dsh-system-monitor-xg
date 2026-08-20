@@ -1,5 +1,5 @@
 {
-  "name": "dsh-system-monitor",
+  "name": "dsh-system-monitor-xg",
   "version": "0.1.0",
   "description": "DSH 系统负载监控插件：CPU/内存/GPU 算力与显存带宽利用率、显存、功耗、温度实时显示，自动诊断推理瓶颈（算力 vs 带宽 vs 功耗 vs 热 vs 显存容量），Web 底栏 + agent 工具 + prefill/decode 阶段对比 + 负载 JSONL 落盘。",
   "keywords": [
@@ -37,14 +37,14 @@
     "LICENSE"
   ],
   "license": "MIT",
-  "author": "dsh-system-monitor contributors",
+  "author": "dsh-system-monitor-xg contributors",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/<your-github-user>/dsh-system-monitor.git"
+    "url": "git+https://github.com/<your-github-user>/dsh-system-monitor-xg.git"
   },
-  "homepage": "https://github.com/<your-github-user>/dsh-system-monitor#readme",
+  "homepage": "https://github.com/<your-github-user>/dsh-system-monitor-xg#readme",
   "bugs": {
-    "url": "https://github.com/<your-github-user>/dsh-system-monitor/issues"
+    "url": "https://github.com/<your-github-user>/dsh-system-monitor-xg/issues"
   },
   "publishConfig": {
     "access": "public"

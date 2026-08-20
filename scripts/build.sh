@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dsh-system-monitor 构建脚本（POSIX 版；Windows 开发者用 scripts/build.ps1）。
+# dsh-system-monitor-xg 构建脚本（POSIX 版；Windows 开发者用 scripts/build.ps1）。
 #
 # 1. 定位 DSH checkout（DSH_CHECKOUT 环境变量，或常见路径探测）
 # 2. 符号链接类型依赖到 node_modules（host: cordis/tools/webserver/session；

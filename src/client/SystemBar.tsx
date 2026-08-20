@@ -7,7 +7,7 @@
  * Clicking the bar expands the generation phase comparison (prefill vs
  * decode). 瓶颈徽标颜色：算力=蓝、带宽=琥珀、功耗=橙、热/显存=红、均衡=灰。
  *
- * @module dsh-system-monitor/client/SystemBar
+ * @module dsh-system-monitor-xg/client/SystemBar
  */
 
 import { memo, useEffect, useState } from 'react'

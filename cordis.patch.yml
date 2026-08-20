@@ -1,13 +1,13 @@
-# dsh-system-monitor：宿主机负载监控（CPU/内存/GPU 算力·带宽·显存·功耗·温度）
+# dsh-system-monitor-xg：宿主机负载监控（CPU/内存/GPU 算力·带宽·显存·功耗·温度）
 # + 推理瓶颈诊断（算力受限 / 带宽受限 / 功耗受限 / 热受限 / 显存容量）。
 # 提供 Web 底栏实时显示、system_metrics 工具与负载 JSONL 落盘。
 - insert:
-    - id: dsh-system-monitor
-      name: 'dsh-system-monitor'
+    - id: dsh-system-monitor-xg
+      name: 'dsh-system-monitor-xg'
       config:
         # 采样间隔（毫秒）；nvidia-smi 单次查询约 50ms，默认 1000 开销可忽略
         intervalMs: 1000
         # 内存环形缓冲条数（REST history 窗口上限）
         historySize: 3600
-        # 负载 JSONL 落盘开关（目录 ~/.dsh/dsh-system-monitor/）
+        # 负载 JSONL 落盘开关（目录 ~/.dsh/dsh-system-monitor-xg/）
         persist: true

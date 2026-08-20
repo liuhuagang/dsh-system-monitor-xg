@@ -4,7 +4,7 @@
  * LocaleNamespaceMap so the framework synthesizes the typed `t` seat for
  * registered entries.
  *
- * @module dsh-system-monitor/client/locales
+ * @module dsh-system-monitor-xg/client/locales
  */
 
 export const NS = 'system-monitor'
@@ -63,7 +63,7 @@ const en: Record<keyof typeof zh, string> = {
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** dsh-system-monitor dictionary namespace. */
+    /** dsh-system-monitor-xg dictionary namespace. */
     'system-monitor': keyof typeof zh
   }
 }

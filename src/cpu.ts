@@ -4,7 +4,7 @@
  * two samples (the same technique psutil uses). The first call returns null
  * (no previous ticks to diff against).
  *
- * @module dsh-system-monitor/cpu
+ * @module dsh-system-monitor-xg/cpu
  */
 
 import { cpus } from 'node:os'

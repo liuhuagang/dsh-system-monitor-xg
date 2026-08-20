@@ -8,7 +8,7 @@
  *  1. GPU-level utilization / memory / power / temp / clocks
  *  2. compute-app processes (显存占用进程，供 tool 展示；5s 节流)
  *
- * @module dsh-system-monitor/gpu
+ * @module dsh-system-monitor-xg/gpu
  */
 
 import { execFile } from 'node:child_process'

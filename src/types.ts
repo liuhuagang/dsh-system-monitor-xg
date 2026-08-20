@@ -1,5 +1,5 @@
 /**
- * Shared wire types for dsh-system-monitor.
+ * Shared wire types for dsh-system-monitor-xg.
  *
  * A sample point is the host-side unit of observation: one tick of the
  * sampler with CPU / memory / GPU metrics and the generation stage it
@@ -7,7 +7,7 @@
  * these shapes. Types are `type` aliases (not interfaces) so they satisfy
  * DSH's JsonValue structural constraint (implicit index signature).
  *
- * @module dsh-system-monitor/types
+ * @module dsh-system-monitor-xg/types
  */
 
 /** Which phase of a model generation the sample fell into. */

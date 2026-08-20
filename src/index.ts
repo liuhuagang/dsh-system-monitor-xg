@@ -1,5 +1,5 @@
 /**
- * dsh-system-monitor host entry: sampler lifecycle + REST API + the
+ * dsh-system-monitor-xg host entry: sampler lifecycle + REST API + the
  * `system_metrics` tool.
  *
  * Host side provides everything the browser cannot:
@@ -7,10 +7,10 @@
  *  2. 瓶颈诊断（算力受限 / 带宽受限 / 功耗受限 / 热限制 / 显存容量）
  *  3. 生成阶段跟踪：prefill（计算密集）vs decode（带宽密集）两阶段负载对比
  *  4. REST API（底栏 1s 轮询）：/system-monitor/api/snapshot · /generations
- *  5. JSONL 落盘（~/.dsh/dsh-system-monitor/）
+ *  5. JSONL 落盘（~/.dsh/dsh-system-monitor-xg/）
  *  6. system_metrics 工具：agent 会话内随时查询负载与瓶颈（评测归因）
  *
- * @module dsh-system-monitor
+ * @module dsh-system-monitor-xg
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -25,7 +25,7 @@ import { Sampler } from './sampler.ts'
 import { KIND_LABELS } from './bottleneck.ts'
 import type { Config, SnapshotResponse } from './types.ts'
 
-export const name = 'dsh-system-monitor'
+export const name = 'dsh-system-monitor-xg'
 export const inject = ['webServer', 'tools']
 
 const API_PREFIX = '/system-monitor/api'
@@ -70,9 +70,9 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
 
   ctx.effect(() => {
     sampler.start(ctx)
-    console.log(`[dsh-system-monitor] sampler started (interval ${config.intervalMs}ms, history ${config.historySize}, persist ${config.persist})`)
+    console.log(`[dsh-system-monitor-xg] sampler started (interval ${config.intervalMs}ms, history ${config.historySize}, persist ${config.persist})`)
     return () => sampler.dispose()
-  }, 'dsh-system-monitor: sampler')
+  }, 'dsh-system-monitor-xg: sampler')
 
   ctx.effect(() => ctx.webServer.register({
     kind: 'prefix',
@@ -116,7 +116,7 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
       }
       json(res, 404, { error: 'not-found' })
     },
-  }), 'dsh-system-monitor: rest api')
+  }), 'dsh-system-monitor-xg: rest api')
 
   ctx.effect(() => ctx.tools.register(defineTool({
     name: 'system_metrics',
@@ -165,7 +165,7 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
         processes,
       }
     },
-  })), 'dsh-system-monitor: system_metrics tool')
+  })), 'dsh-system-monitor-xg: system_metrics tool')
 }
 
 /** 模型可读的纯文本渲染（tool 的 Native 内容）。 */
