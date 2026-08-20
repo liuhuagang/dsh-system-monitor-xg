@@ -43,18 +43,32 @@ nvidia-smi 有两个**正交**的利用率数字：
   ——无需 pip、无需原生模块、无需管理员权限
 - 多 GPU 支持（取最活跃 GPU 做瓶颈诊断）
 
-## 安装
+## 安装（给使用者）
 
 ```sh
-# 从 npm 安装（推荐）
+# 1. 安装插件（从 npm，无需 clone 仓库）
 dsh plugin --profile web add dsh-system-monitor-xg
 
-# 或从本地目录装配（开发模式，改代码重建 lib 即生效）
-dsh plugin --profile web add <本仓库路径>
+# 2. 重启 DSH Web（生产模式无热装机制；重启方式与你平时启动 dsh 一致）
+#    重启后打开任意会话页，输入框下方（内置统计行右侧）出现负载条：
+#    CPU 12% 内存 34% │ GPU0 SM 45% 带宽 88% 显存 12/24G 160W 66℃ ●带宽受限
+
+# 3. 验证
+#    - 底栏每秒刷新；跑一次本地推理可见瓶颈徽标变化（带宽受限/算力受限…）
+#    - 点击底栏展开最近生成的 prefill/decode 阶段对比
+#    - 会话里让 agent 调用：system_metrics（查询负载/瓶颈/阶段统计）
+#    - 负载数据落盘 ~/.dsh/dsh-system-monitor/（metrics-<日期>.jsonl）
+
+# 4. 升级
+dsh plugin --profile web update dsh-system-monitor-xg
+
+# 5. 卸载
+dsh plugin --profile web remove dsh-system-monitor-xg
 ```
 
-然后**重启 DSH Web**（生产模式无热装插件机制）。底栏在会话页面输入框下方
-（内置统计行右侧）出现。
+> 环境要求：NVIDIA GPU + 驱动自带 nvidia-smi（Windows 在 System32，Linux 在
+> /usr/bin）；无 NVIDIA GPU 时插件正常加载，GPU 段显示「不可用」，CPU/内存
+> 监控不受影响。开发模式（想改代码调试）用 `dsh plugin --profile web add <本仓库路径>`。
 
 ## 使用
 

@@ -34,7 +34,7 @@ function kindLabel(kind: string | undefined, t: T): string {
 }
 
 function fmtGb(mb: number): string {
-  return (mb / 1024).toFixed(mb >= 10240 ? 0 : 1)
+  return (mb / 1024).toFixed(0)
 }
 
 function Segment({ text, title, className }: { text: string; title?: string; className?: string }) {

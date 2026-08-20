@@ -71,7 +71,7 @@ const STYLES = `
   min-width: 14em;
 }
 .dsm-fixed-vram {
-  min-width: 8.5em;
+  min-width: 7em;
 }
 .dsm-fixed-pwr,
 .dsm-fixed-temp {
@@ -83,8 +83,12 @@ const STYLES = `
 .dsm-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   font-weight: 600;
+  /* 固定宽：中英文本长度差异大（空闲 ↔ bandwidth-bound），
+     状态切换不引起整条伸缩 */
+  min-width: 8.8em;
 }
 .dsm-dot {
   display: inline-block;
