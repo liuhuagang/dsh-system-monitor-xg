@@ -32,6 +32,7 @@
     "lib",
     "src",
     "cordis.patch.yml",
+    "scripts/build.sh",
     "README.md"
   ],
   "license": "MIT",
@@ -51,6 +52,8 @@
   },
   "scripts": {
     "build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1",
+    "build:sh": "bash scripts/build.sh",
+    "test": "node --test tests/",
     "build:client": "tsdown"
   },
   "devDependencies": {
