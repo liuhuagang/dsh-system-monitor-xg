@@ -33,9 +33,22 @@
     "src",
     "cordis.patch.yml",
     "scripts/build.sh",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "license": "MIT",
+  "author": "dsh-system-monitor contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/<your-github-user>/dsh-system-monitor.git"
+  },
+  "homepage": "https://github.com/<your-github-user>/dsh-system-monitor#readme",
+  "bugs": {
+    "url": "https://github.com/<your-github-user>/dsh-system-monitor/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
