@@ -62,6 +62,21 @@ const STYLES = `
   display: inline-block;
   white-space: nowrap;
 }
+/* 固定段宽：数字位数变化（1% ↔ 100%）不引起整条伸缩 */
+.dsm-fixed-cpu,
+.dsm-fixed-mem {
+  min-width: 5.6em;
+}
+.dsm-fixed-gpu {
+  min-width: 14em;
+}
+.dsm-fixed-vram {
+  min-width: 8.5em;
+}
+.dsm-fixed-pwr,
+.dsm-fixed-temp {
+  min-width: 3em;
+}
 .dsm-sep {
   color: var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.25));
 }

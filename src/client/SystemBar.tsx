@@ -37,8 +37,8 @@ function fmtGb(mb: number): string {
   return (mb / 1024).toFixed(mb >= 10240 ? 0 : 1)
 }
 
-function Segment({ text, title }: { text: string; title?: string }) {
-  return <span className="dsm-seg" title={title}>{text}</span>
+function Segment({ text, title, className }: { text: string; title?: string; className?: string }) {
+  return <span className={className !== undefined ? `dsm-seg ${className}` : 'dsm-seg'} title={title}>{text}</span>
 }
 
 function PhaseCell(stats: GenerationSummary['prefill'] | null, t: T): string {
@@ -89,28 +89,32 @@ export const SystemBar = memo(function SystemBar(props: PropsRuntime<'conversati
         ) : (
           <>
             <Segment
+              className="dsm-fixed-cpu"
               text={`${t('cpu')} ${point.cpu ? `${point.cpu.percent.toFixed(0)}%` : '…'}`}
               title={point.cpu ? `CPU ${point.cpu.percent.toFixed(1)}% (${point.cpu.perCore.map(p => p.toFixed(0)).join('/')}%)` : undefined}
             />
             <Segment
+              className="dsm-fixed-mem"
               text={`${t('memory')} ${point.memory ? `${point.memory.percent.toFixed(0)}%` : '…'}`}
               title={point.memory ? `内存 ${point.memory.usedGb.toFixed(1)}/${point.memory.totalGb.toFixed(0)}G` : undefined}
             />
             <span className="dsm-sep" aria-hidden>│</span>
             {point.gpuUnavailable || gpu === undefined ? (
-              <Segment text={`${t('gpu')} ${t('unavailable')}`} title={t('unavailable')} />
+              <Segment className="dsm-fixed-gpu" text={`${t('gpu')} ${t('unavailable')}`} title={t('unavailable')} />
             ) : (
               <>
                 <Segment
+                  className="dsm-fixed-gpu"
                   text={`${t('gpu')}${gpu.index} SM ${gpu.smPercent.toFixed(0)}% 带宽 ${gpu.memBandwidthPercent.toFixed(0)}%`}
                   title={`${t('sm')} ${gpu.smPercent.toFixed(1)}% · ${t('bw')} ${gpu.memBandwidthPercent.toFixed(1)}%（显存带宽控制器利用率）`}
                 />
                 <Segment
+                  className="dsm-fixed-vram"
                   text={`${t('vram')} ${fmtGb(gpu.vramUsedMb)}/${fmtGb(gpu.vramTotalMb)}G`}
                   title={`VRAM ${(gpu.vramUsedMb / 1024).toFixed(1)}/${(gpu.vramTotalMb / 1024).toFixed(0)} GiB`}
                 />
-                <Segment text={`${gpu.powerDrawW.toFixed(0)}W`} title={`功耗 ${gpu.powerDrawW.toFixed(0)}W${gpu.powerLimitW > 0 ? `/${gpu.powerLimitW.toFixed(0)}W` : ''}`} />
-                <Segment text={`${gpu.tempC.toFixed(0)}℃`} title={`温度 ${gpu.tempC.toFixed(0)}℃ · SM 时钟 ${gpu.smClockMhz.toFixed(0)}/${gpu.smClockMaxMhz.toFixed(0)} MHz`} />
+                <Segment className="dsm-fixed-pwr" text={`${gpu.powerDrawW.toFixed(0)}W`} title={`功耗 ${gpu.powerDrawW.toFixed(0)}W${gpu.powerLimitW > 0 ? `/${gpu.powerLimitW.toFixed(0)}W` : ''}`} />
+                <Segment className="dsm-fixed-temp" text={`${gpu.tempC.toFixed(0)}℃`} title={`温度 ${gpu.tempC.toFixed(0)}℃ · SM 时钟 ${gpu.smClockMhz.toFixed(0)}/${gpu.smClockMaxMhz.toFixed(0)} MHz`} />
               </>
             )}
             {bottleneck != null && (
@@ -131,11 +135,11 @@ export const SystemBar = memo(function SystemBar(props: PropsRuntime<'conversati
             <table className="dsm-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>{t('prefill')}</th>
-                  <th>{t('prefill')} SM/BW</th>
-                  <th>{t('decode')}</th>
-                  <th>{t('decode')} SM/BW</th>
+                  <th className="dsm-num">#</th>
+                  <th className="dsm-num">{t('prefill')}</th>
+                  <th className="dsm-num">{t('prefill')} SM/BW</th>
+                  <th className="dsm-num">{t('decode')}</th>
+                  <th className="dsm-num">{t('decode')} SM/BW</th>
                 </tr>
               </thead>
               <tbody>
