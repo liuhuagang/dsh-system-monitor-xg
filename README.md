@@ -5,7 +5,9 @@ DSH（DeepSeek Harness）宿主机负载监控插件：**CPU / 内存 / GPU 算�
 算力打满」**：decode 阶段 SM 大量时间在等显存返回数据，瓶颈常常是显存带宽
 而不是算力。
 
-![DSH](https://img.shields.io/badge/DSH-0.1.0--rc.7-blue)
+[![DSH](https://img.shields.io/badge/DSH-0.1.0--rc.7-blue)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm version](https://img.shields.io/npm/v/dsh-system-monitor-xg)](https://www.npmjs.com/package/dsh-system-monitor-xg)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## 解决什么问题
 
@@ -44,11 +46,11 @@ nvidia-smi 有两个**正交**的利用率数字：
 ## 安装
 
 ```sh
-# 本地目录（开发）
-dsh plugin --profile web add <本仓库路径>
+# 从 npm 安装（推荐）
+dsh plugin --profile web add dsh-system-monitor-xg
 
-# 或 npm 发布后（scope 待定）
-dsh plugin --profile web add @<scope>/dsh-system-monitor-xg
+# 或从本地目录装配（开发模式，改代码重建 lib 即生效）
+dsh plugin --profile web add <本仓库路径>
 ```
 
 然后**重启 DSH Web**（生产模式无热装插件机制）。底栏在会话页面输入框下方

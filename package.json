@@ -40,11 +40,11 @@
   "author": "dsh-system-monitor-xg contributors",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/<your-github-user>/dsh-system-monitor-xg.git"
+    "url": "git+https://github.com/liuhuagang/dsh-system-monitor-xg.git"
   },
-  "homepage": "https://github.com/<your-github-user>/dsh-system-monitor-xg#readme",
+  "homepage": "https://github.com/liuhuagang/dsh-system-monitor-xg#readme",
   "bugs": {
-    "url": "https://github.com/<your-github-user>/dsh-system-monitor-xg/issues"
+    "url": "https://github.com/liuhuagang/dsh-system-monitor-xg/issues"
   },
   "publishConfig": {
     "access": "public"

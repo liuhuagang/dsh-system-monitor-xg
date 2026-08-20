@@ -2,3 +2,6 @@ node_modules/
 lib/
 .client-build/
 *.log
+# 本地验证实验产物（bench 脚本与 nvidia-smi 日志），不入库
+.verify/
+
