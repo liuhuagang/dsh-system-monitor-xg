@@ -1,0 +1,63 @@
+{
+  "name": "dsh-system-monitor",
+  "version": "0.1.0",
+  "description": "DSH 系统负载监控插件：CPU/内存/GPU 算力与显存带宽利用率、显存、功耗、温度实时显示，自动诊断推理瓶颈（算力 vs 带宽 vs 功耗 vs 热 vs 显存容量），Web 底栏 + agent 工具 + prefill/decode 阶段对比 + 负载 JSONL 落盘。",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "system-monitor",
+    "gpu",
+    "vram",
+    "bandwidth",
+    "bottleneck",
+    "composer-dock"
+  ],
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1",
+    "build:client": "tsdown"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "~18.3.1",
+    "@types/react-dom": "~18.3.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^6.0.3"
+  }
+}
