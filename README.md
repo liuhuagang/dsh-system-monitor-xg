@@ -108,9 +108,6 @@ dsh plugin --profile web remove dsh-system-monitor-xg
 
 ## 开发
 
-> **项目规则**：仓库定位（内部工程库 vs 外部发布库）、开发/提交/发布约定、
-> 架构速览见 [AGENTS.md](AGENTS.md)。
-
 ```sh
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
 # 构建产物：lib/index.js（host）+ lib/client.js（浏览器 bundle）+ lib/types/
