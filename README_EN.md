@@ -1,8 +1,6 @@
 # dsh-system-monitor-xg
 
-<div align="center">
-  <sub><a href="README.md">简体中文</a> | <b>English</b></sub>
-</div>
+[简体中文](README.md) · **English**
 
 DSH (DeepSeek Harness) host-machine load monitoring plugin: real-time display of
 **CPU / memory / GPU compute and VRAM bandwidth utilization, VRAM, power,

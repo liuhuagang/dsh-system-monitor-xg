@@ -1,8 +1,6 @@
 # dsh-system-monitor-xg
 
-<div align="center">
-  <sub><b>简体中文</b> | <a href="README_EN.md">English</a></sub>
-</div>
+**简体中文** · [English](README_EN.md)
 
 DSH（DeepSeek Harness）宿主机负载监控插件：**CPU / 内存 / GPU 算力与显存带宽
 利用率、显存、功耗、温度**实时显示，并自动诊断推理瓶颈——**「GPU 占用高 ≠
