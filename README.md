@@ -1,5 +1,9 @@
 # dsh-system-monitor-xg
 
+<div align="center">
+  <sub><b>简体中文</b> | <a href="README_EN.md">English</a></sub>
+</div>
+
 DSH（DeepSeek Harness）宿主机负载监控插件：**CPU / 内存 / GPU 算力与显存带宽
 利用率、显存、功耗、温度**实时显示，并自动诊断推理瓶颈——**「GPU 占用高 ≠
 算力打满」**：decode 阶段 SM 大量时间在等显存返回数据，瓶颈常常是显存带宽
@@ -103,6 +107,9 @@ dsh plugin --profile web remove dsh-system-monitor-xg
 ```
 
 ## 开发
+
+> **项目规则**：仓库定位（内部工程库 vs 外部发布库）、开发/提交/发布约定、
+> 架构速览见 [AGENTS.md](AGENTS.md)。
 
 ```sh
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
