@@ -34,6 +34,30 @@ const STYLES = `
   max-width: var(--dsh-composer-card-max-width, 780px);
   margin: 0 auto;
   box-sizing: border-box;
+  /* 新 host 的 composer.dock 是横向 flex 条（内置统计 pill + 槽位条目 +
+     上下文百分比排同一行）。flex 0 0 100% 让底栏在条内独占一整行，margin
+     auto 保持居中；旧 host 的块级/纵向布局里 flex 被忽略，行为不变。 */
+  flex: 0 0 100%;
+}
+/* host 的 .dock 是 nowrap：basis 100% 的项不会换行，而是整行横向溢出
+   （底栏内容被挤到侧栏/视口外）。给容器补 flex-wrap: wrap。槽位渲染点带
+   一层 div[data-slot] 锚点（display:contents，布局透明；其子才是 flex
+   项）——.dsm-wrap 的直接父是锚点而非 .dock，容器须经锚点反查：“以
+   composer.dock 锚点为直接子元素的 div”即 host 的 .dock（锚点是契约化的
+   可寻址接缝）。首位选择器兜底宿主去掉锚点的形态（条目直接为 .dock 子
+   元素），两者命中同一目标、互不冲突。特异性 (0,1,2)/(0,1,1) 均高于
+   host 的 .dock 类 (0,1,0)。 */
+div:has(> div[data-slot='conversation.composer.dock']),
+div:has(> .dsm-wrap) {
+  flex-wrap: wrap;
+}
+/* wrap 生效后，dock 的末个子元素（内置 ContextMeter）会独自占一行：
+   order -1 把它拉回第 1 行，与统计 pill 组成居中的首行条带；:not 守卫
+   保证槽位锚点/兄弟监控条不会被误拉。 */
+div:has(> div[data-slot='conversation.composer.dock'])
+  > :last-child:not(div[data-slot='conversation.composer.dock']),
+div:has(> .dsm-wrap) > :last-child:not(.dsm-wrap):not(.dsg-wrap) {
+  order: -1;
 }
 .dsm-bar {
   display: flex;
@@ -67,6 +91,10 @@ const STYLES = `
 .dsm-fixed-mem {
   min-width: 5.6em;
 }
+.dsm-cputemp {
+  /* CPU 温度最宽 99℃；平台无传感器/权限不足时不渲染，出现后不再伸缩 */
+  min-width: 2.6em;
+}
 .dsm-fixed-gpu {
   min-width: 14em;
 }
@@ -74,9 +102,12 @@ const STYLES = `
   /* 22.00/24.00 两位小数，中英文标签最宽约 8.6em */
   min-width: 8.8em;
 }
-.dsm-fixed-pwr,
-.dsm-fixed-temp {
+.dsm-fixed-pwr {
   min-width: 3em;
+}
+.dsm-fixed-temp {
+  /* 核心/显存双温度，最宽 99/99℃（约 4.5em）；仅核心温度时不引起伸缩 */
+  min-width: 5em;
 }
 .dsm-sep {
   color: var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.25));

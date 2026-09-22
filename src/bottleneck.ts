@@ -10,7 +10,9 @@
  * 判据（阈值可后续做成配置）：
  *   - 空闲：SM 与带宽都 < 15%
  *   - 显存瓶颈：显存占用 > 95%
- *   - 热限制：温度 ≥ 88℃，或 ≥ 80℃ 且 SM 时钟掉到 < 92% max
+ *   - 热限制：核心温度 ≥ 88℃，或 ≥ 80℃ 且 SM 时钟掉到 < 92% max；
+ *     或显存温度 ≥ 95℃（显存独立过热——长 decode 下 GDDR 常比核心先热；
+ *     驱动未上报显存温度时为 null，不参与判定）
  *   - 功耗受限：功耗 ≥ 98% 上限
  *   - 带宽受限：带宽 ≥ 80%（SM 较低 = 典型 decode 等待；SM 双高 = 逼近极限）
  *   - 算力受限：SM ≥ 80% 且带宽 < 60%（典型 prefill）
@@ -39,6 +41,7 @@ function evidence(g: GpuMetrics): Bottleneck['evidence'] {
     powerDrawW: g.powerDrawW,
     powerLimitW: g.powerLimitW,
     tempC: g.tempC,
+    memTempC: g.memTempC,
     smClockMhz: g.smClockMhz,
     smClockMaxMhz: g.smClockMaxMhz,
   }
@@ -63,10 +66,16 @@ export function diagnose(g: GpuMetrics): Bottleneck {
       evidence: ev,
     }
   }
-  if (g.tempC >= 88 || (g.tempC >= 80 && clockRatio < 0.92)) {
+  const coreThermal = g.tempC >= 88 || (g.tempC >= 80 && clockRatio < 0.92)
+  const memThermal = g.memTempC !== null && g.memTempC >= 95
+  if (coreThermal || memThermal) {
+    const memPart = g.memTempC !== null ? ` / 显存 ${g.memTempC.toFixed(0)}℃` : ''
+    const detail = coreThermal
+      ? `温度 ${g.tempC.toFixed(0)}℃${memPart} · SM 时钟 ${g.smClockMhz.toFixed(0)}/${g.smClockMaxMhz.toFixed(0)} MHz，已降频`
+      : `显存温度 ${g.memTempC!.toFixed(0)}℃（核心 ${g.tempC.toFixed(0)}℃）偏高，显存易热限制`
     return {
       kind: 'thermal', label: KIND_LABELS.thermal,
-      detail: `温度 ${g.tempC.toFixed(0)}℃ · SM 时钟 ${g.smClockMhz.toFixed(0)}/${g.smClockMaxMhz.toFixed(0)} MHz，已降频`,
+      detail,
       evidence: ev,
     }
   }

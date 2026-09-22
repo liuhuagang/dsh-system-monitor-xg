@@ -2,12 +2,13 @@
 
 [简体中文](README.md) · **English**
 
-DSH (DeepSeek Harness) host-machine load monitoring plugin: real-time display of
-**CPU / memory / GPU compute and VRAM bandwidth utilization, VRAM, power,
-temperature**, plus automatic inference bottleneck diagnosis — **"high GPU
-utilization ≠ compute saturated"**: during the decode stage, SMs spend a large
-part of their time waiting for data to come back from VRAM, so the bottleneck is
-often VRAM bandwidth rather than compute.
+DSH (DeepSeek Harness) host-machine load monitoring plugin: real-time display
+of **CPU utilization + temperature / memory / GPU compute and VRAM bandwidth
+utilization, VRAM, power, core/memory temperature**, plus automatic inference
+bottleneck diagnosis — **"high GPU utilization ≠ compute saturated"**: during
+the decode stage, SMs spend a large part of their time waiting for data to
+come back from VRAM, so the bottleneck is often VRAM bandwidth rather than
+compute.
 
 [![DSH](https://img.shields.io/badge/DSH-0.1.0--rc.7-blue)](https://github.com/deepseek-ai/deepseek-harness)
 [![npm version](https://img.shields.io/npm/v/dsh-system-monitor-xg)](https://www.npmjs.com/package/dsh-system-monitor-xg)
@@ -30,13 +31,17 @@ Combined, they answer "the GPU is busy — busy on compute or on bandwidth?":
 | High SM + low bandwidth | **Compute-bound** (typical of prefill: compute is saturated) |
 | Power ≈ cap | Power wall |
 | VRAM usage > 95% | VRAM capacity bottleneck (context-limited) |
-| High temperature + SM clock throttling | Thermal limit |
+| High core temp + SM clock throttling, or memory temp ≥ 95°C | Thermal limit |
 
 ## Features
 
-- **Real-time Web bottom-bar display**: CPU %, memory %, and per-GPU SM compute /
-  VRAM bandwidth / VRAM / power / temperature, with overlay bottleneck badges
-  (compute=blue, bandwidth=amber, power=orange, thermal/VRAM=red)
+- **Real-time Web bottom-bar display**: CPU % + CPU temperature (`52°C`, from
+  the ACPI thermal zone, sampled every 5s; hidden when the platform exposes no
+  sensor or lacks permission), memory %, and per-GPU SM compute / VRAM
+  bandwidth / VRAM / power / core+memory temperature (`77/68°C`; falls back to
+  core only when the driver does not report memory temperature), with overlay
+  bottleneck badges (compute=blue, bandwidth=amber, power=orange,
+  thermal/VRAM=red)
 - **Generation-stage comparison**: click the bottom bar to expand the **prefill
   vs decode** two-stage load statistics for the last 10 generations — prefill is
   compute-intensive, decode is bandwidth-intensive; comparing the two stages is
@@ -46,8 +51,10 @@ Combined, they answer "the GPU is busy — busy on compute or on bandwidth?":
   session (directly citable in evaluation reports)
 - **Load JSONL written to disk**: `~/.dsh/dsh-system-monitor/metrics-<date>.jsonl`
   (sampled every second) + `generations-<date>.jsonl` (per-generation stage summary)
-- **Zero runtime dependencies**: CPU/memory use Node built-in APIs, GPU parses
-  `nvidia-smi` CSV — no pip, no native modules, no admin privileges
+- **Zero runtime dependencies**: CPU/memory use Node built-in APIs, CPU
+  temperature reads WMI (Windows) / sysfs (Linux), GPU parses `nvidia-smi` CSV
+  — no pip, no native modules, no admin privileges (CPU temperature on Windows
+  requires `root/wmi` WMI access; see known limitations)
 - Multi-GPU support (uses the most active GPU for bottleneck diagnosis)
 
 ## Installation (for users)
@@ -59,7 +66,7 @@ dsh plugin --profile web add dsh-system-monitor-xg
 # 2. Restart DSH Web (production mode has no hot-reload mechanism; restart the same
 #    way you normally start dsh). After restart, open any session page; a load bar
 #    appears below the input box (to the right of the built-in stats row):
-#    CPU 12% 内存 34% │ GPU0 SM 45% 带宽 88% 显存 12/24G 160W 66℃ ●带宽受限
+#    CPU 12% 内存 34% │ GPU0 SM 45% 带宽 88% 显存 12/24G 160W 66/62℃ ●带宽受限
 
 # 3. Verify
 #    - The bottom bar refreshes every second; run a local inference to see the
@@ -81,15 +88,24 @@ dsh plugin --profile web remove dsh-system-monitor-xg
 > Environment requirements: NVIDIA GPU + the nvidia-smi bundled with the driver
 > (Windows: System32, Linux: /usr/bin); without an NVIDIA GPU the plugin still
 > loads normally, the GPU segment shows "unavailable", and CPU/memory monitoring
-> is unaffected. For development mode (to tweak and debug the code) use
-> `dsh plugin --profile web add <this repo path>`.
+> is unaffected. A failed nvidia-smi call (transient driver glitch, GPU reset,
+> timeout, ...) does NOT disable GPU monitoring permanently: after a failure it
+> retries on a cooldown (5s for transient errors, 5min when the nvidia-smi
+> binary is missing) and recovers automatically as soon as a sample succeeds;
+> the failure reason is logged to the host and exposed via the `lastGpuError`
+> field of `system_metrics`. For development mode (to tweak and debug the code)
+> use `dsh plugin --profile web add <this repo path>`.
 
 ## Usage
 
 - The bottom bar refreshes once every second and is directly readable:
-  `CPU 12% 内存 34% │ GPU0 SM 45% 带宽 88% 显存 12.4/24G 160W 66℃ ●带宽受限`
-- Hover to see details (per-core distribution / clocks / power cap); click to
-  expand the generation-stage comparison table
+  `CPU 12% 42℃ 内存 34% │ GPU0 SM 45% 带宽 88% 显存 12.4/24G 160W 66/62℃ ●带宽受限`
+  (the CPU temperature segment follows the CPU utilization segment and is
+  hidden when the platform exposes no sensor or lacks permission; the GPU
+  temperature segment is `core/memory °C` and degrades to a single value
+  `66°C` when the driver does not report memory temperature)
+- Hover to see details (per-core distribution / clocks / power cap / core and
+  memory temperature); click to expand the generation-stage comparison table
 - In an agent session, call the tool directly (example):
   ```
   使用 system_metrics 工具查询当前负载和瓶颈，history=5, generations=5
@@ -119,10 +135,6 @@ dsh plugin --profile web remove dsh-system-monitor-xg
 
 ## Development
 
-> **Project rules**: repo positioning (internal engineering repo vs external
-> publishing repo), development/commit/release conventions, and an architecture
-> overview — see [AGENTS.md](AGENTS.md).
-
 ```sh
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
 # Build output: lib/index.js (host) + lib/client.js (browser bundle) + lib/types/
@@ -133,10 +145,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
   checkout's tsc / tsdown — no `npm install` needed for this repo
 - When installed as a `link:`, rebuilding after changing code takes effect
   (after restarting DSH Web)
-- Structure: `src/` host (sampling `cpu.ts` / `gpu.ts`, diagnosis
-  `bottleneck.ts`, stage tracking `sampler.ts`, persistence `ledger.ts`, entry
-  `index.ts`), `src/client/` browser side (`SystemBar.tsx` bottom bar,
-  `fetch.ts` synchronous XHR polling)
+- Structure: `src/` host (sampling `cpu.ts` / `gpu.ts` / `thermal.ts` (CPU
+  temperature, 5s slow channel), diagnosis `bottleneck.ts`, stage tracking
+  `sampler.ts`, persistence `ledger.ts`, entry `index.ts`), `src/client/`
+  browser side (`SystemBar.tsx` bottom bar, `fetch.ts` synchronous XHR polling)
 
 ### Key technical decisions
 
@@ -154,6 +166,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
 - On Windows, reading per-process VRAM via `nvidia-smi --query-compute-apps`
   requires admin privileges; without them usedMb is 0 (process names are still
   visible)
+- Not every driver exposes a memory-temperature sensor (`temperature.memory`
+  returns `N/A`, e.g. the RTX PRO 6000 Blackwell on some drivers): in that case
+  the temperature segment shows core temperature only, and the diagnosis
+  evidence `memTempC` is `null` and does not participate in the thermal rule;
+  it activates automatically once the driver supports it
+- CPU temperature on Windows comes from WMI `root/wmi:MSAcpi_ThermalZoneTemperature`
+  (mean of all thermal zones; raw 0.1°C values divided by 10), queried through
+  a `powershell -NoProfile` child process every 5s. Machine policies often
+  restrict `root/wmi` to administrators: when access is denied, the bar hides
+  the CPU temperature segment, `system_metrics.lastCpuThermalError` carries the
+  reason, and the host retries on a 5-minute cooldown — starting DSH elevated
+  (or relaxing the WMI policy) makes it work with no configuration change.
+  Some laptops / VMs expose no ACPI thermal zone at all; it is `null` there too
 - Stage statistics depend on samples landing within the prefill/decode window;
   very short generations (< sample interval) may have no samples
 - The bottom bar is attached to the session page (composer.dock); it is not

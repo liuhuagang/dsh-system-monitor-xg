@@ -1,14 +1,19 @@
 /**
  * Sampler: the heart of dsh-system-monitor-xg.
  *
- * 1. 定时采样（默认 1s）：CPU（os.cpus 差值）+ 内存（os）+ GPU（nvidia-smi），
- *    组合成 SamplePoint 推入环形缓冲，并打上当前生成阶段的标签。
+ * 1. 定时采样（默认 1s）：CPU（os.cpus 差值 + CpuThermalMonitor 的 5s 温度
+ *    缓存）+ 内存（os）+ GPU（nvidia-smi），组合成 SamplePoint 推入环形缓冲，
+ *    并打上当前生成阶段的标签。
  * 2. 生成阶段跟踪（会话事件驱动）：
- *      request/header  → 新 generation 开始，stage = prefill（模型处理提示词）
- *      assistant/chunk（首个）→ stage = decode（流式生成，逐 token 解码）
- *      assistant/message → generation 结束，汇总 prefill/decode 两阶段统计
+ *      request/header     → 新 generation 开始，stage = prefill（模型处理提示词）
+ *      agent/assistant-stream 首个 chunk frame → stage = decode（流式生成，逐 token 解码）
+ *      assistant/message  → generation 结束，汇总 prefill/decode 两阶段统计
  *    prefill 是计算密集（矩阵乘），decode 是带宽密集（逐 token 访存）——
  *    两阶段负载特征的对比正是「GPU 占用高但算力没跑满」的量化证据。
+ *
+ *    注：持久化事件里的 `assistant/chunk` 已在 DSH 会话格式 v3 移除（流式内容
+ *    折入 assistant/message.stream），host 侧的直播增量改经 agent 作用域事件
+ *    `agent/assistant-stream`（frame.type: start/chunk/end）投递。
  *
  * 采样是异步的（GPU 查询约 50ms）；用 tickId 序号保护乱序，重复 tick 直接
  * 丢弃，保证环形缓冲单调推进。
@@ -21,6 +26,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { CpuMonitor } from './cpu.ts'
 import type { GpuMonitor } from './gpu.ts'
+import type { CpuThermalMonitor } from './thermal.ts'
 import { diagnoseMostActive } from './bottleneck.ts'
 import type { GenerationSummary, PhaseStats, SamplePoint, Stage } from './types.ts'
 
@@ -64,6 +70,7 @@ export class Sampler {
   private readonly options: SamplerOptions
   private readonly cpu: CpuMonitor
   private readonly gpu: GpuMonitor
+  private readonly thermal: CpuThermalMonitor
   private readonly history: SamplePoint[] = []
   private readonly generations: GenerationSummary[] = []
   private active: ActiveGeneration | null = null
@@ -72,9 +79,10 @@ export class Sampler {
   private tickId = 0
   private disposers: Array<() => void> = []
 
-  constructor(cpu: CpuMonitor, gpu: GpuMonitor, options: SamplerOptions) {
+  constructor(cpu: CpuMonitor, gpu: GpuMonitor, thermal: CpuThermalMonitor, options: SamplerOptions) {
     this.cpu = cpu
     this.gpu = gpu
+    this.thermal = thermal
     this.options = options
   }
 
@@ -84,7 +92,7 @@ export class Sampler {
       const id = ++this.tickId
       const stage = this.active?.stage ?? 'idle'
       const generationId = this.active?.id ?? null
-      const cpu = this.cpu.sample()
+      const cpu = this.cpu.sample(this.thermal.latest())
       const memory = {
         usedGb: (totalmem() - freemem()) / 1024 ** 3,
         totalGb: totalmem() / 1024 ** 3,
@@ -115,8 +123,13 @@ export class Sampler {
     const onEvent = (session: unknown, event: SessionEvent): void => {
       this.onEvent(event)
     }
+    // agent 作用域的直播流帧（host 侧唯一可见的流式增量通道）
+    const onStream = (payload: { frame?: { type?: string } } | undefined): void => {
+      this.onStreamFrame(payload?.frame)
+    }
     // cordis 的 ctx.on 返回卸载函数（dispose），随插件 fiber 一并释放。
     this.disposers.push(ctx.on('session/event', onEvent))
+    this.disposers.push(ctx.on('agent/assistant-stream', onStream))
   }
 
   dispose(): void {
@@ -140,25 +153,27 @@ export class Sampler {
         }
         break
       }
-      case 'assistant/chunk': {
-        const now = Date.now()
-        if (this.active === null) {
-          // 无 header 直出的流（兜底）：视首个 chunk 为 decode 起点
-          this.active = { id: this.nextGenerationId++, startedAt: now, decodeStartedAt: now, stage: 'decode', samples: [] }
-          break
-        }
-        if (this.active.stage === 'prefill') {
-          this.active.stage = 'decode'
-          this.active.decodeStartedAt = now
-        }
-        break
-      }
       case 'assistant/message': {
         this.finishActive(Date.now())
         break
       }
       default:
         break
+    }
+  }
+
+  /** agent/assistant-stream 帧：首个 chunk 帧 = prefill 结束 / decode 开始。 */
+  private onStreamFrame(frame: { type?: string } | undefined): void {
+    if (frame?.type !== 'chunk') return
+    const now = Date.now()
+    if (this.active === null) {
+      // 无 header 直出的流（兜底）：视首个 chunk 为 decode 起点
+      this.active = { id: this.nextGenerationId++, startedAt: now, decodeStartedAt: now, stage: 'decode', samples: [] }
+      return
+    }
+    if (this.active.stage === 'prefill') {
+      this.active.stage = 'decode'
+      this.active.decodeStartedAt = now
     }
   }
 

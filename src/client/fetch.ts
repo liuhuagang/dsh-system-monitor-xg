@@ -9,7 +9,13 @@
  * @module dsh-system-monitor-xg/client/fetch
  */
 
-export interface CpuMetrics { percent: number; perCore: number[]; cores: number }
+export interface CpuMetrics {
+  percent: number
+  perCore: number[]
+  cores: number
+  /** CPU 温度（℃）；平台无传感器/权限不足时为 null；旧 host 混装时字段缺失（undefined） */
+  tempC: number | null
+}
 export interface MemoryMetrics { usedGb: number; totalGb: number; percent: number }
 export interface GpuMetrics {
   index: number
@@ -21,8 +27,12 @@ export interface GpuMetrics {
   powerDrawW: number
   powerLimitW: number
   tempC: number
+  /** 显存温度（℃）；驱动未上报时为 null */
+  memTempC: number | null
   smClockMhz: number
   smClockMaxMhz: number
+  memClockMhz: number
+  memClockMaxMhz: number
 }
 export interface Bottleneck {
   kind: 'idle' | 'compute' | 'bandwidth' | 'power' | 'thermal' | 'vram' | 'mixed'

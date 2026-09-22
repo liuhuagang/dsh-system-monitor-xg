@@ -1,8 +1,11 @@
 /**
  * The system monitor bar: a `conversation.composer.dock` entry (id
  * 'system-monitor', order 1 — sits right of the built-in stats line) that
- * polls the host's light snapshot once per second and renders CPU / memory /
- * GPU (SM 算力 · 显存带宽 · 显存 · 功耗 · 温度) plus the bottleneck badge.
+ * polls the host's light snapshot once per second and renders CPU (+温度) /
+ * memory / GPU (SM 算力 · 显存带宽 · 显存 · 功耗 · 核心/显存温度) plus the
+ * bottleneck badge. CPU 温度段紧随 CPU 占用段（ACPI 热区，5s 采样；平台无
+ * 传感器/权限不足或旧 host 混装时隐藏）；GPU 温度段显示 `核心/显存℃`
+ * （显存驱动未上报时仅核心温度）。
  *
  * Clicking the bar expands the generation phase comparison (prefill vs
  * decode). 瓶颈徽标颜色：算力=蓝、带宽=琥珀、功耗=橙、热/显存=红、均衡=灰。
@@ -93,6 +96,14 @@ export const SystemBar = memo(function SystemBar(props: PropsRuntime<'conversati
               text={`${t('cpu')} ${point.cpu ? `${point.cpu.percent.toFixed(0)}%` : '…'}`}
               title={point.cpu ? `CPU ${point.cpu.percent.toFixed(1)}% (${point.cpu.perCore.map(p => p.toFixed(0)).join('/')}%)` : undefined}
             />
+            {/* CPU 温度段：仅平台有传感器且权限允许时渲染（旧 host 混装缺字段 → undefined，不渲染） */}
+            {point.cpu !== null && typeof point.cpu.tempC === 'number' ? (
+              <Segment
+                className="dsm-cputemp"
+                text={`${point.cpu.tempC.toFixed(0)}℃`}
+                title={`CPU 温度 ${point.cpu.tempC.toFixed(1)}℃（ACPI 热区，5s 采样）`}
+              />
+            ) : null}
             <Segment
               className="dsm-fixed-mem"
               text={`${t('memory')} ${point.memory ? `${point.memory.percent.toFixed(0)}%` : '…'}`}
@@ -114,7 +125,14 @@ export const SystemBar = memo(function SystemBar(props: PropsRuntime<'conversati
                   title={`VRAM ${(gpu.vramUsedMb / 1024).toFixed(2)}/${(gpu.vramTotalMb / 1024).toFixed(2)} GiB`}
                 />
                 <Segment className="dsm-fixed-pwr" text={`${gpu.powerDrawW.toFixed(0)}W`} title={`功耗 ${gpu.powerDrawW.toFixed(0)}W${gpu.powerLimitW > 0 ? `/${gpu.powerLimitW.toFixed(0)}W` : ''}`} />
-                <Segment className="dsm-fixed-temp" text={`${gpu.tempC.toFixed(0)}℃`} title={`温度 ${gpu.tempC.toFixed(0)}℃ · SM 时钟 ${gpu.smClockMhz.toFixed(0)}/${gpu.smClockMaxMhz.toFixed(0)} MHz`} />
+                {(() => {
+                  const coreT = gpu.tempC.toFixed(0)
+                  // 字段缺失（旧 host 混装）或驱动未上报（null）都只显示核心温度
+                  const memT = typeof gpu.memTempC === 'number' ? gpu.memTempC.toFixed(0) : null
+                  const text = memT !== null ? `${coreT}/${memT}℃` : `${coreT}℃`
+                  const title = `核心温度 ${coreT}℃${memT !== null ? ` / 显存温度 ${memT}℃` : ''} · SM 时钟 ${gpu.smClockMhz.toFixed(0)}/${gpu.smClockMaxMhz.toFixed(0)} MHz`
+                  return <Segment className="dsm-fixed-temp" text={text} title={title} />
+                })()}
               </>
             )}
             {bottleneck != null && (

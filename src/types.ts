@@ -19,6 +19,15 @@ export type CpuMetrics = {
   /** Per-core utilization percent. */
   perCore: number[]
   cores: number
+  /**
+   * CPU 温度（℃）——独立慢通道（非 os.cpus 派生）：Windows 取 WMI
+   * `root/wmi:MSAcpi_ThermalZoneTemperature` 全部热区均值（需当前用户可访问
+   * root/wmi，否则拒绝访问），Linux 取 sysfs thermal_zone（优先 cpu/pkg/soc
+   * 类型），5s 节流采样、最新值随每个采样点附上。
+   * null = 平台无传感器 / 权限不足 / 尚未成功采样（原因见
+   * system_metrics 的 `lastCpuThermalError`）。
+   */
+  tempC: number | null
 }
 
 export type MemoryMetrics = {
@@ -38,6 +47,10 @@ export type MemoryMetrics = {
  * 高 SM 利用率并不等于算力打满：decode 阶段 SM 大量时间在等显存返回数据，
  * 此时带宽利用率高而算力并未真正饱和 —— 这正是「GPU 占用高但算力没跑满」
  * 的可观测来源。
+ *
+ * 温度有两路：`tempC`（核心/GPU 结温）与 `memTempC`（显存，GDDR/HBM）。
+ * 显存温度在长 decode 下经常比核心更早逼近上限，是热诊断的另一路依据；
+ * 部分驱动不暴露该传感器（nvidia-smi 返回 N/A），此时 `memTempC` 为 null。
  */
 export type GpuMetrics = {
   index: number
@@ -50,7 +63,10 @@ export type GpuMetrics = {
   powerDrawW: number
   /** 功耗上限（W）；驱动未上报时为 0 */
   powerLimitW: number
+  /** 核心温度（℃）；驱动未上报时为 0 */
   tempC: number
+  /** 显存温度（℃）；驱动未上报（nvidia-smi 返回 N/A）时为 null */
+  memTempC: number | null
   smClockMhz: number
   smClockMaxMhz: number
   memClockMhz: number
@@ -81,6 +97,8 @@ export type Bottleneck = {
     powerDrawW: number
     powerLimitW: number
     tempC: number
+    /** 显存温度（℃）；驱动未上报时为 null */
+    memTempC: number | null
     smClockMhz: number
     smClockMaxMhz: number
   }
@@ -96,7 +114,7 @@ export type SamplePoint = {
   cpu: CpuMetrics | null
   memory: MemoryMetrics | null
   gpus: GpuMetrics[]
-  /** nvidia-smi 不可用（无 NVIDIA 驱动/未找到） */
+  /** nvidia-smi 不可用（驱动失败/缺失，冷却期自动重试中；瞬态故障成功后自动恢复） */
   gpuUnavailable: boolean
   /** 基于最活跃 GPU 的瓶颈诊断；无 GPU 数据时为 null */
   bottleneck: Bottleneck | null

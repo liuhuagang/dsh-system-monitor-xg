@@ -3,7 +3,7 @@
  * `system_metrics` tool.
  *
  * Host side provides everything the browser cannot:
- *  1. 定时采样 CPU / 内存 / GPU（算力 · 显存带宽 · 显存 · 功耗 · 温度 · 时钟）
+ *  1. 定时采样 CPU（含 ACPI 热区温度，5s 慢通道）/ 内存 / GPU（算力 · 显存带宽 · 显存 · 功耗 · 核心/显存温度 · 时钟）
  *  2. 瓶颈诊断（算力受限 / 带宽受限 / 功耗受限 / 热限制 / 显存容量）
  *  3. 生成阶段跟踪：prefill（计算密集）vs decode（带宽密集）两阶段负载对比
  *  4. REST API（底栏 1s 轮询）：/system-monitor/api/snapshot · /generations
@@ -22,6 +22,7 @@ import { CpuMonitor } from './cpu.ts'
 import { GpuMonitor } from './gpu.ts'
 import { Ledger } from './ledger.ts'
 import { Sampler } from './sampler.ts'
+import { CpuThermalMonitor, CPU_TEMP_POLL_MS } from './thermal.ts'
 import { KIND_LABELS } from './bottleneck.ts'
 import type { Config, SnapshotResponse } from './types.ts'
 
@@ -60,8 +61,9 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
   const config = resolveConfig(rawConfig)
   const cpu = new CpuMonitor()
   const gpu = new GpuMonitor()
+  const thermal = new CpuThermalMonitor()
   const ledger = config.persist ? new Ledger() : null
-  const sampler = new Sampler(cpu, gpu, {
+  const sampler = new Sampler(cpu, gpu, thermal, {
     intervalMs: config.intervalMs,
     historySize: config.historySize,
     onPoint: point => { ledger?.recordPoint(point) },
@@ -70,8 +72,12 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
 
   ctx.effect(() => {
     sampler.start(ctx)
-    console.log(`[dsh-system-monitor-xg] sampler started (interval ${config.intervalMs}ms, history ${config.historySize}, persist ${config.persist})`)
-    return () => sampler.dispose()
+    thermal.start(CPU_TEMP_POLL_MS)
+    console.log(`[dsh-system-monitor-xg] sampler started (interval ${config.intervalMs}ms, history ${config.historySize}, persist ${config.persist}, cpu-thermal ${CPU_TEMP_POLL_MS}ms)`)
+    return () => {
+      sampler.dispose()
+      thermal.dispose()
+    }
   }, 'dsh-system-monitor-xg: sampler')
 
   ctx.effect(() => ctx.webServer.register({
@@ -120,7 +126,7 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
 
   ctx.effect(() => ctx.tools.register(defineTool({
     name: 'system_metrics',
-    description: '查询宿主机当前负载与推理瓶颈诊断：CPU 占用、内存占用、每张 GPU 的算力利用率（SM）、显存带宽利用率、显存占用、功耗、温度、时钟频率，以及瓶颈推断（算力受限/带宽受限/功耗受限/热限制/显存容量）。' +
+    description: '查询宿主机当前负载与推理瓶颈诊断：CPU 占用与 CPU 温度（ACPI 热区）、内存占用、每张 GPU 的算力利用率（SM）、显存带宽利用率、显存占用、功耗、核心/显存温度、时钟频率，以及瓶颈推断（算力受限/带宽受限/功耗受限/热限制/显存容量）。' +
       '注意：GPU 占用高不等于算力打满——decode 阶段算力常在等显存带宽，请对比 SM 与带宽利用率。' +
       '另可返回最近生成（prefill/decode 两阶段）的负载均值对比与负载进程列表。用于评测环境观测与性能归因。',
     parameters: {
@@ -135,10 +141,12 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
         properties: {
           ts: { type: 'number' },
           stage: { type: 'string', description: '当前生成阶段：idle/prefill/decode/other' },
-          cpu: { type: 'json', description: 'CPU 占用：{percent, perCore, cores} 或 null' },
+          cpu: { type: 'json', description: 'CPU 占用：{percent, perCore, cores, tempC} 或 null（tempC 为 CPU 温度 ℃，平台无传感器或权限不足时为 null）' },
           memory: { type: 'json', description: '内存占用：{usedGb, totalGb, percent} 或 null' },
           gpus: { type: 'array', description: '每张 GPU 的指标数组' },
           gpuUnavailable: { type: 'boolean' },
+          lastGpuError: { type: 'string', description: '最近一次 nvidia-smi 失败原因（健康时为空串；冷却期自动重试中）' },
+          lastCpuThermalError: { type: 'string', description: '最近一次 CPU 温度采样失败原因（健康时为空串；如 WMI root/wmi 拒绝访问；冷却期自动重试中）' },
           bottleneck: { type: 'json', description: `瓶颈诊断：{kind, label, detail}，kind ∈ {idle, compute, bandwidth, power, thermal, vram, mixed}` },
           history: { type: 'array' },
           generations: { type: 'array' },
@@ -159,6 +167,8 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
         memory: now?.memory ?? null,
         gpus: now?.gpus ?? [],
         gpuUnavailable: now?.gpuUnavailable ?? gpu.isUnavailable,
+        lastGpuError: gpu.lastError,
+        lastCpuThermalError: thermal.lastError,
         bottleneck: now?.bottleneck ?? null,
         history,
         generations,
@@ -171,17 +181,22 @@ export function apply(ctx: Context, rawConfig?: HostConfig): void {
 /** 模型可读的纯文本渲染（tool 的 Native 内容）。 */
 function formatForModel(value: Record<string, unknown>): string {
   const lines: string[] = []
-  const cpu = value.cpu as { percent?: number } | null
+  const cpu = value.cpu as { percent?: number; tempC?: number | null } | null
   const memory = value.memory as { percent?: number; usedGb?: number; totalGb?: number } | null
+  const cpuTemp = typeof cpu?.tempC === 'number' ? `（温度 ${cpu.tempC.toFixed(0)}℃）` : ''
   lines.push(`时间 ${new Date(value.ts as number).toISOString()}，阶段 ${String(value.stage)}`)
-  lines.push(`CPU ${cpu?.percent !== undefined ? `${cpu.percent.toFixed(1)}%` : 'N/A'}，内存 ${memory?.percent !== undefined ? `${memory.percent.toFixed(1)}%（${memory.usedGb?.toFixed(1)}/${memory.totalGb?.toFixed(1)}G）` : 'N/A'}`)
+  lines.push(`CPU ${cpu?.percent !== undefined ? `${cpu.percent.toFixed(1)}%` : 'N/A'}${cpuTemp}，内存 ${memory?.percent !== undefined ? `${memory.percent.toFixed(1)}%（${memory.usedGb?.toFixed(1)}/${memory.totalGb?.toFixed(1)}G）` : 'N/A'}`)
+  const cpuThermalError = String(value.lastCpuThermalError ?? '').trim()
+  if (cpuThermalError !== '') lines.push(`CPU 温度：不可用（${cpuThermalError}）`)
   const gpus = value.gpus as Array<Record<string, unknown>>
   if (gpus.length > 0) {
     for (const g of gpus) {
-      lines.push(`GPU${String(g.index)} ${String(g.name)}：SM 算力 ${Number(g.smPercent).toFixed(0)}% / 带宽 ${Number(g.memBandwidthPercent).toFixed(0)}%，显存 ${(Number(g.vramUsedMb) / 1024).toFixed(1)}/${(Number(g.vramTotalMb) / 1024).toFixed(0)}G，功耗 ${Number(g.powerDrawW).toFixed(0)}W，温度 ${Number(g.tempC).toFixed(0)}℃，SM 时钟 ${Number(g.smClockMhz).toFixed(0)}/${Number(g.smClockMaxMhz).toFixed(0)}MHz`)
+      const memTemp = g.memTempC !== null && g.memTempC !== undefined ? ` / 显存 ${Number(g.memTempC).toFixed(0)}℃` : ''
+      lines.push(`GPU${String(g.index)} ${String(g.name)}：SM 算力 ${Number(g.smPercent).toFixed(0)}% / 带宽 ${Number(g.memBandwidthPercent).toFixed(0)}%，显存 ${(Number(g.vramUsedMb) / 1024).toFixed(1)}/${(Number(g.vramTotalMb) / 1024).toFixed(0)}G，功耗 ${Number(g.powerDrawW).toFixed(0)}W，温度 ${Number(g.tempC).toFixed(0)}℃${memTemp}，SM 时钟 ${Number(g.smClockMhz).toFixed(0)}/${Number(g.smClockMaxMhz).toFixed(0)}MHz`)
     }
   } else if (value.gpuUnavailable) {
-    lines.push('GPU：nvidia-smi 不可用')
+    const lastError = String(value.lastGpuError ?? '').trim()
+    lines.push(lastError !== '' ? `GPU：nvidia-smi 不可用（${lastError}）` : 'GPU：nvidia-smi 不可用')
   }
   const bottleneck = value.bottleneck as { label?: string; detail?: string } | null
   if (bottleneck) lines.push(`瓶颈：${bottleneck.label}（${bottleneck.detail}）`)
