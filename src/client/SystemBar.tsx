@@ -1,7 +1,7 @@
 /**
  * The system monitor bar: a `conversation.composer.dock` entry (id
- * 'system-monitor', order 1 — sits right of the built-in stats line) that
- * polls the host's light snapshot once per second and renders CPU (+温度) /
+ * 'system-monitor', order 2 — below the built-in activity(0)/usage(1) stat
+ * pills) that polls the host's light snapshot once per second and renders CPU (+温度) /
  * memory / GPU (SM 算力 · 显存带宽 · 显存 · 功耗 · 核心/显存温度) plus the
  * bottleneck badge. CPU 温度段紧随 CPU 占用段（ACPI 热区，5s 采样；平台无
  * 传感器/权限不足或旧 host 混装时隐藏）；GPU 温度段显示 `核心/显存℃`

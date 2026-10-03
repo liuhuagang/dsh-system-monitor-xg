@@ -1,7 +1,8 @@
 /**
  * dsh-system-monitor-xg client entry: installs stylesheet and locale, then
  * registers the system bar on `conversation.composer.dock` (id
- * 'system-monitor', order 1 — next to the built-in stats line at order 0).
+ * 'system-monitor', order 2 — below the built-in activity(0)/usage(1) stat
+ * pills, which DSH v0.2.0 split from the single 'stats' entry at order 0).
  *
  * @module dsh-system-monitor-xg/client
  */
@@ -200,10 +201,13 @@ export const inject = ['slots', 'locale']
 export function apply(ctx: ClientContext): void {
   ctx.effect(installStyles, 'dsh-system-monitor-xg: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-system-monitor-xg: locale')
+  // DSH v0.2.0 起内置统计拆成两个 dock 条目：activity(order 0)、usage(order 1)。
+  // 本条取 order 2 避免与 usage 撞序（list 槽同序按注册先后稳定排序，撞序会
+  // 把内置 pill 与监控条拆进不同行，底栏错位）；flex 0 0 100% 仍保证独占一行。
   ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
     name: 'conversation.composer.dock',
     id: 'system-monitor',
-    order: 1,
+    order: 2,
     locale: NS,
   }, SystemBar))
 }
